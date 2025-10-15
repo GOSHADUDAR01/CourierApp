@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-// import { loginAdmin } from '../utils/api'; // больше не нужен
+import { login as loginAdmin } from '../utils/api'; // больше не нужен
 
 
-export default function Login({ setToken }) {
+export default function Login({onLoginSuccess}) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -12,7 +12,7 @@ export default function Login({ setToken }) {
     try {
       const data = await loginAdmin(email, password);
       localStorage.setItem("token", data.token);
-      setToken(data.token);
+      onLoginSuccess();
     } catch (err) {
       setError("Неверный логин или пароль");
     }

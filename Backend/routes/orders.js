@@ -17,11 +17,7 @@ router.get("/", async (req, res) => {
 // ===== Создание нового заказа =====
 router.post("/", async (req, res) => {
   try {
-    const order = new Order({
-      address: req.body.address,
-      items: req.body.items,
-      courier: req.user.id
-    });
+    const order = new Order(req.body);
     await order.save();
     res.json(order);
   } catch (err) {

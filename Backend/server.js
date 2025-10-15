@@ -5,48 +5,44 @@ const cors = require("cors");
 const app = express();
 
 app.use(cors({
-  origin: ["http://localhost:3000"], // фронтенд админки
-  methods: ["GET","POST","PUT","PATCH","DELETE","OPTIONS"],
-  allowedHeaders: ["Content-Type","Authorization"]
+    origin: ["http://localhost:3000"], // фронтенд админки
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
 app.use(express.json());
 
+const authMiddleware = require("./middleware/auth");
+
 // Подключаем роуты
 app.use("/api/auth", require("./routes/auth"));
-app.use("/api/orders", require("./routes/orders"));
-app.use("/api/users", require("./routes/users"));
-
-// Защищённый маршрут для проверки
-const authMiddleware = require("./middleware/auth");
-app.get("/api/protected", authMiddleware, (req, res) => {
-  res.json({ msg: `Привет, пользователь ${req.user.id}, доступ разрешён!` });
-});
+app.use("/api/orders", authMiddleware, require("./routes/orders"));
+app.use("/api/users", authMiddleware, require("./routes/users"));
 
 // Подключение к MongoDB
-mongoose.connect("mongodb://127.0.0.1:27017/d_p", { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(async () => {
-    console.log("MongoDB подключен");
+mongoose.connect("mongodb://localhost:27017", {
+    dbName: "d_p"
+})
+    .then(async () => {
+        console.log("MongoDB подключен");
 
-    // Автоматическая инициализация токенов админа при старте сервера
-    const User = require("./models/User");
-    const jwt = require("jsonwebtoken");
+        // Автоматическая инициализация токенов админа при старте сервера
+        const User = require("./models/User");
+        const jwt = require("jsonwebtoken");
 
-    const admin = await User.findOne({ role: "admin" });
-    if (admin) {
-      const token = jwt.sign(
-        { id: admin._id, role: admin.role },
-        process.env.JWT_SECRET || "secret123",
-        { expiresIn: "15m" }
-      );
-      const refreshToken = jwt.sign(
-        { id: admin._id, role: admin.role },
-        process.env.JWT_REFRESH_SECRET || "refreshSecret123",
-        { expiresIn: "7d" }
-      );
+        const admin = await User.findOne({role: "admin"});
+        if (admin) {
+            const token = jwt.sign(
+                {id: admin._id, role: admin.role},
+                process.env.JWT_SECRET || "secret123",
+                {expiresIn: "15m"}
+            );
+            const refreshToken = jwt.sign(
+                {id: admin._id, role: admin.role},
+                process.env.JWT_REFRESH_SECRET || "refreshSecret123",
+                {expiresIn: "7d"}
+            );
 
-      admin.refreshToken = refreshToken;
-      await admin.save();
 
       console.log("Токены админа сгенерированы автоматически");
       console.log("Access token:", token);
